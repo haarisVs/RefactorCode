@@ -57,6 +57,8 @@ class BookingRepository extends BaseRepository
      */
     public function getUsersJobs($user_id)
     {
+        // Naming Convesation should be camelcase
+
         $cuser = User::find($user_id);
         $usertype = '';
         $emergencyJobs = array();
@@ -92,11 +94,19 @@ class BookingRepository extends BaseRepository
     public function getUsersJobsHistory($user_id, Request $request)
     {
         $page = $request->get('page');
+
+        /* Start ....
+         * this code can be short as $page
+         */ $pageNum = $request->page ?? 1;
         if (isset($page)) {
             $pagenum = $page;
         } else {
             $pagenum = "1";
         }
+        /* End ....
+         */
+
+
         $cuser = User::find($user_id);
         $usertype = '';
         $emergencyJobs = array();
@@ -133,6 +143,13 @@ class BookingRepository extends BaseRepository
         if ($user->user_type == env('CUSTOMER_ROLE_ID')) {
             $cuser = $user;
 
+
+            /*
+             * this all code can be manage with Form Request in controller
+             * if data is not validated controller will direct with response
+             *
+             * Beging...
+             */
             if (!isset($data['from_language_id'])) {
                 $response['status'] = 'fail';
                 $response['message'] = "Du måste fylla in alla fält";
@@ -172,6 +189,11 @@ class BookingRepository extends BaseRepository
                     return $response;
                 }
             }
+
+            /*
+             *
+             *  End...
+             */
             if (isset($data['customer_phone_type'])) {
                 $data['customer_phone_type'] = 'yes';
             } else {
@@ -246,6 +268,7 @@ class BookingRepository extends BaseRepository
             $response['status'] = 'success';
             $response['id'] = $job->id;
             $data['job_for'] = array();
+
             if ($job->gender != null) {
                 if ($job->gender == 'male') {
                     $data['job_for'][] = 'Man';
@@ -288,7 +311,9 @@ class BookingRepository extends BaseRepository
         $user_type = $data['user_type'];
         $job = Job::findOrFail(@$data['user_email_job_id']);
         $job->user_email = @$data['user_email'];
+        // this can can be short as  $job->reference = $data['reference'] ?? ''
         $job->reference = isset($data['reference']) ? $data['reference'] : '';
+
         $user = $job->user()->get()->first();
         if (isset($data['address'])) {
             $job->address = ($data['address'] != '') ? $data['address'] : $user->userMeta->address;
@@ -381,6 +406,7 @@ class BookingRepository extends BaseRepository
      */
     public function jobEnd($post_data = array())
     {
+        // Varrible Name must be Camel Case
         $completeddate = date('Y-m-d H:i:s');
         $jobid = $post_data["job_id"];
         $job_detail = Job::with('translatorJobRel')->find($jobid);
@@ -415,6 +441,7 @@ class BookingRepository extends BaseRepository
 
         $job->save();
 
+         // $tr varrible not expalian what does it explain naming varriable must be well name
         $tr = $job->translatorJobRel->where('completed_at', Null)->where('cancel_at', Null)->first();
 
         Event::fire(new SessionEnded($job, ($post_data['userid'] == $job->user_id) ? $tr->user_id : $job->user_id));
@@ -640,6 +667,9 @@ class BookingRepository extends BaseRepository
             }
         }
 
+        /* Calling Curl From in Repository is not good idea we should be
+          one common function in helper do perform curl operation
+        */
         $fields = array(
             'app_id'         => $onesignalAppID,
             'tags'           => json_decode($user_tags),
@@ -896,10 +926,14 @@ class BookingRepository extends BaseRepository
             if ($data['admin_comments'] == '') return false;
             $job->admin_comments = $data['admin_comments'];
         }
+
+        // ... Start below statement is very bad paratices it should directly (return $job->save())
+
         $job->save();
         return true;
 //        }
         return false;
+        //... End
     }
 
     /**
@@ -951,10 +985,14 @@ class BookingRepository extends BaseRepository
             $this->mailer->send($email, $name, $subject, 'emails.session-ended', $dataEmail);
 
         }
+
+        // ... Start below statement is very bad paratices it should directly (return $job->save())
+
         $job->save();
         return true;
 //        }
         return false;
+        // End
     }
 
     /**
@@ -1379,7 +1417,7 @@ class BookingRepository extends BaseRepository
      */
     public function acceptJob($data, $user)
     {
-
+        // Naming Convenstion must be Camel Case
         $adminemail = config('app.admin_email');
         $adminSenderEmail = config('app.admin_sender_email');
 
@@ -1543,6 +1581,7 @@ class BookingRepository extends BaseRepository
 //                Event::fire(new JobWasCanceled($job));
                 Job::deleteTranslatorJobRel($translator->id, $job_id);
 
+                $data->all([""])
                 $data = $this->jobToData($job);
 
                 $this->sendNotificationTranslator($job, $data, $translator->id);   // send Push all sutiable translators
@@ -1659,6 +1698,7 @@ class BookingRepository extends BaseRepository
 
     public function customerNotCall($post_data)
     {
+        // should follow Camel Case Naming Convensation
         $completeddate = date('Y-m-d H:i:s');
         $jobid = $post_data["job_id"];
         $job_detail = Job::with('translatorJobRel')->find($jobid);
@@ -1798,7 +1838,7 @@ class BookingRepository extends BaseRepository
                 if ($requestdata['booking_type'] == 'phone')
                     $allJobs->where('customer_phone_type', 'yes');
             }
-            
+
             $allJobs->orderBy('created_at', 'desc');
             $allJobs->with('user', 'language', 'feedback.user', 'translatorJobRel.user', 'distance');
             if ($limit == 'all')
@@ -1827,7 +1867,7 @@ class BookingRepository extends BaseRepository
                 });
                 if(isset($requestdata['count']) && $requestdata['count'] != 'false') return ['count' => $allJobs->count()];
             }
-            
+
             if (isset($requestdata['lang']) && $requestdata['lang'] != '') {
                 $allJobs->whereIn('from_language_id', $requestdata['lang']);
             }
@@ -1838,6 +1878,7 @@ class BookingRepository extends BaseRepository
                 $allJobs->whereIn('job_type', $requestdata['job_type']);
             }
             if (isset($requestdata['customer_email']) && $requestdata['customer_email'] != '') {
+                // should used elequent
                 $user = DB::table('users')->where('email', $requestdata['customer_email'])->first();
                 if ($user) {
                     $allJobs->where('user_id', '=', $user->id);
@@ -1903,6 +1944,7 @@ class BookingRepository extends BaseRepository
 
         $languages = Language::where('active', '1')->orderBy('language')->get();
         $requestdata = Request::all();
+        // Used Elequent rather than   Query Builder
         $all_customers = DB::table('users')->where('user_type', '1')->lists('email');
         $all_translators = DB::table('users')->where('user_type', '2')->lists('email');
 
@@ -1911,6 +1953,8 @@ class BookingRepository extends BaseRepository
 
 
         if ($cuser && $cuser->is('superadmin')) {
+
+            // Used Elequent
             $allJobs = DB::table('jobs')
                 ->join('languages', 'jobs.from_language_id', '=', 'languages.id')->whereIn('jobs.id', $jobId);
             if (isset($requestdata['lang']) && $requestdata['lang'] != '') {
@@ -2163,9 +2207,9 @@ class BookingRepository extends BaseRepository
 
     /**
      * Convert number of minutes to hour and minute variant
-     * @param  int $time   
-     * @param  string $format 
-     * @return string         
+     * @param  int $time
+     * @param  string $format
+     * @return string
      */
     private function convertToHoursMins($time, $format = '%02dh %02dmin')
     {
@@ -2177,7 +2221,7 @@ class BookingRepository extends BaseRepository
 
         $hours = floor($time / 60);
         $minutes = ($time % 60);
-        
+
         return sprintf($format, $hours, $minutes);
     }
 

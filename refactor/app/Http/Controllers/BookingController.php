@@ -63,8 +63,12 @@ class BookingController extends Controller
      * @param Request $request
      * @return mixed
      */
+
+    // Best Pratices used Form Request
     public function store(Request $request)
     {
+        //
+        // $request->validated() should be you since it will limit all the necessity  coloumns
         $data = $request->all();
 
         $response = $this->repository->store($request->__authenticatedUser, $data);
@@ -78,11 +82,15 @@ class BookingController extends Controller
      * @param Request $request
      * @return mixed
      */
+    // Best Pratices used Form Request
     public function update($id, Request $request)
     {
+        // $request->validated() should be used you since it will limit all the necessity  field
         $data = $request->all();
         $cuser = $request->__authenticatedUser;
+
         $response = $this->repository->updateJob($id, array_except($data, ['_token', 'submit']), $cuser);
+        // End
 
         return response($response);
     }
@@ -196,11 +204,17 @@ class BookingController extends Controller
     {
         $data = $request->all();
 
+        /* this condition code can be short as
+
+            $distance = $request->distance ?? "";
+        */
         if (isset($data['distance']) && $data['distance'] != "") {
             $distance = $data['distance'];
         } else {
             $distance = "";
         }
+
+
         if (isset($data['time']) && $data['time'] != "") {
             $time = $data['time'];
         } else {
@@ -222,7 +236,13 @@ class BookingController extends Controller
         } else {
             $flagged = 'no';
         }
-        
+
+        /*
+         *   $manually_handled can be manage value array value
+         *   like :
+         *   $tatus = array ("Inactive","Active")
+         *  $status = $status[0] // Inactive All
+         */
         if ($data['manually_handled'] == 'true') {
             $manually_handled = 'yes';
         } else {
@@ -241,6 +261,7 @@ class BookingController extends Controller
             $admincomment = "";
         }
         if ($time || $distance) {
+
 
             $affectedRows = Distance::where('job_id', '=', $jobid)->update(array('distance' => $distance, 'time' => $time));
         }
@@ -281,9 +302,12 @@ class BookingController extends Controller
     {
         $data = $request->all();
         $job = $this->repository->find($data['jobid']);
+
+        // Should used CamelCase
         $job_data = $this->repository->jobToData($job);
 
         try {
+            // it will slow down systems SMS Notication should be manage by Queice
             $this->repository->sendSMSNotificationToTranslator($job);
             return response(['success' => 'SMS sent']);
         } catch (\Exception $e) {
